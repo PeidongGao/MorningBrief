@@ -115,6 +115,41 @@ This repository is intended to contain only reusable application code and public
 - local notes or source material
 - private workflow documentation
 
+Read the full **[DISCLAIMER.md](DISCLAIMER.md)** before using or publishing
+generated reports.
+
+## Attribution
+
+A **WillGaoLab** project, created and maintained by **William (Peidong) Gao**.
+
+- Project website: <https://williampeidonggao.com>
+- Brand: <https://github.com/WillGaoLab>
+- Personal GitHub: <https://github.com/PeidongGao>
+
+```text
+William (Peidong) Gao
+        |
+     WillGaoLab
+        |
+ Open-source projects
+        |
+ MorningBrief
+```
+
+## Affiliation
+
+Not affiliated with, endorsed by, or sponsored by OpenAI, Codex, Streamlit,
+GitHub, any data provider, any model provider, or any other entity referenced
+here. All trademarks, product names, company names, and service names are the
+property of their respective owners and are used for identification only.
+
+Full text: [DISCLAIMER.md -> Affiliation Disclaimer](DISCLAIMER.md#affiliation-disclaimer).
+
 ## License
 
-Add an open-source license before publication.
+Original code and documentation: **[MIT License](LICENSE)** © 2026 William Gao.
+
+The MIT grant covers this project's own source and documentation only. It does
+not extend to third-party content, private documents, API outputs, model
+outputs, datasets, trademarks, logos, product names, or other materials
+referenced by a configured workflow or generated report.
