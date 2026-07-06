@@ -1,5 +1,9 @@
 # MorningBrief
 
+MorningBrief transforms Codex into your personal Chief of Staff. By combining
+your knowledge, priorities, and operating principles, it generates consistent,
+decision-ready morning briefings tailored to how you think and work.
+
 MorningBrief is a local CLI for running a Codex-based Morning Brief workflow and reading saved reports in a Streamlit interface.
 
 It wraps an existing prompt workflow: `mb run` executes the configured prompt with Codex, extracts the generated brief, saves it as Markdown, and updates a CSV index. `mb serve` opens a read-only browser for previous reports.
