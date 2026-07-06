@@ -1,0 +1,13 @@
+# local configuration with personal paths — only .env.example is committed
+.env
+
+# private working notes — per git.md these must never be committed/published
+docs/
+git.md
+
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+.venv/

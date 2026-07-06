@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "morningbrief"
+version = "0.1.0"
+description = "CLI wrapper around the WillGaoLabCodex Morning Brief workflow"
+requires-python = ">=3.9"
+dependencies = ["streamlit>=1.30"]
+
+[project.scripts]
+mb = "morningbrief.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
