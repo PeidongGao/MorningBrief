@@ -1,7 +1,8 @@
 """Read-only Streamlit reader for Morning Brief reports.
 
 Launched via `mb serve`. Consumes history.csv and the daily report files in
-MorningBriefData. It never generates reports and never writes anything.
+the configured data directory. It never generates reports and never writes
+anything.
 """
 
 from pathlib import Path

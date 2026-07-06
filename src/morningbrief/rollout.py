@@ -1,8 +1,7 @@
 """Locate the completed Morning Brief rollout and extract the final report.
 
-Native port of the locator logic in WillGaoLabCodex/automations/morning-brief.sh
-(which stays untouched as the reference implementation), with two hardenings
-from the Phase 0 contract:
+Native port of the locator logic used by the external Morning Brief automation
+(which stays untouched as the reference implementation), with two hardenings:
 
 * mtime cutoff — only rollouts written at/after this run's start time are
   eligible, so a stale rollout from an earlier session is never re-reported.

@@ -1,4 +1,4 @@
-"""Invoke the existing WillGaoLabCodex Morning Brief workflow via `codex exec`.
+"""Invoke the configured Morning Brief workflow via `codex exec`.
 
 This module only launches the existing automation; it never modifies it.
 """

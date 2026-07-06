@@ -2,8 +2,8 @@
 
 Commands:
 
-    mb run     Generate today's Morning Brief via the existing WillGaoLabCodex
-               workflow, save it into MorningBriefData, and update history.csv.
+    mb run     Generate today's Morning Brief via the configured Codex
+               workflow, save it into the data directory, and update history.csv.
     mb serve   Launch the read-only Streamlit reader for saved reports.
 """
 
@@ -26,7 +26,7 @@ def _preflight() -> bool:
     """Verify required paths and the codex binary; create data directories."""
     ok = True
     required = [
-        (config.CODEX_REPO, "WillGaoLabCodex repository"),
+        (config.CODEX_REPO, "Codex workflow repository"),
         (config.PROMPT_FILE, "Morning Brief prompt file"),
         (config.VAULT_DIR, "Obsidian vault"),
         (config.AUTOMATION_MEMORY_DIR, "codex automation memory directory"),
@@ -67,7 +67,7 @@ def run_command() -> int:
     start_time = time.time()
     start_date = date.today()
 
-    print("=== mb run: generating Morning Brief via WillGaoLabCodex ===")
+    print("=== mb run: generating Morning Brief via configured Codex workflow ===")
     print(f"Prompt: {config.PROMPT_FILE}")
     print()
 
@@ -164,8 +164,8 @@ def serve_command() -> int:
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
         prog="mb",
-        description="MorningBrief — wrapper around the WillGaoLabCodex "
-        "Morning Brief workflow.",
+        description="MorningBrief — wrapper around a local Codex Morning Brief "
+        "workflow.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser(

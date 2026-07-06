@@ -1,13 +1,30 @@
-# local configuration with personal paths — only .env.example is committed
+# local configuration with personal paths; only .env.example is committed
 .env
 
-# private working notes — per git.md these must never be committed/published
+# private working notes; keep on disk, outside version control
 docs/
 git.md
 
+# generated MorningBrief data
+reports/
+history.csv
+MorningBriefData/
+
+# local Codex/plugin state
+.codex/
+
+# Python/build artifacts
 __pycache__/
 *.pyc
 *.egg-info/
 build/
 dist/
 .venv/
+
+# editor/OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
