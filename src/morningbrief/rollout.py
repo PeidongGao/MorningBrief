@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Iterable, List, Optional, Tuple
 
 SCAN_INTS_RE = re.compile(r"scan:\s*(\d+)\D+?(\d+)\D+?(\d+)", re.IGNORECASE)
-_EMPHASIS_CHARS = "*_#`> "
+_EMPHASIS_CHARS = "*_#`>-+ "
 
 
 class RolloutError(RuntimeError):
