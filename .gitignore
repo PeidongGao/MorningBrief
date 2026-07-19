@@ -16,6 +16,9 @@ MorningBriefData/
 !MorningBriefDataDemo/reports/
 !MorningBriefDataDemo/reports/**
 
+# generated full-demo state and reports
+MorningBriefDataDemo/runtime/
+
 # local Codex/plugin state
 .codex/
 

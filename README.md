@@ -7,13 +7,21 @@ final response as Markdown, and records an append-only history of every run.
 Private prompts, notes, operational memory, Codex sessions, and generated
 reports stay outside this repository.
 
-## What's New in v2.0
+## What's New in v2.1
 
-- Zero-configuration public demo with `mb serve --demo`
-- Exact final-message capture through `codex exec --output-last-message`
-- Atomic report and history writes with non-destructive same-day reruns
-- Portable typed configuration and private state initialization
-- `mb doctor` diagnostics and operational-memory rollback on failed runs
+- Complete fictional workflow through `mb doctor --demo`, `mb run --demo`, and
+  `mb serve --demo`
+- Bundled 12-file public vault with a generic structure unrelated to private
+  user workspaces
+- Isolated, Git-ignored demo runtime for operational memory, generated reports,
+  and history
+- Read-only demo diagnostics and automatic reader selection of generated runs
+- Privacy regression coverage and clean public-only end-to-end validation
+
+Version 2.0 established the reliable application foundation: exact Codex final
+message capture, atomic writes, non-destructive reruns, portable configuration,
+private state initialization, diagnostics, and rollback on failed runs. See the
+[changelog](CHANGELOG.md) for release details.
 
 ## Features
 
@@ -51,12 +59,26 @@ pip install -e .
 
 ## Try the Demo
 
-The repository includes fictional sample data. No Codex installation, private
-files, or configuration is needed:
+The repository includes fictional sample data. To browse the pre-generated
+sample, no Codex installation, private files, or configuration is needed:
 
 ```bash
 mb serve --demo
 ```
+
+To demonstrate the complete workflow with the Codex CLI installed:
+
+```bash
+mb doctor --demo
+mb run --demo
+mb serve --demo
+```
+
+The v2.1 full demo uses the bundled fictional prompt, 12-file Markdown vault, and
+seed operational memory. It ignores `.env` and writes only under the Git-ignored
+`MorningBriefDataDemo/runtime/` directory. After generation, `mb serve --demo`
+automatically opens the generated runtime history. See the
+[full demo guide](MorningBriefDataDemo/README.md) for its file layout.
 
 Use **Close MorningBrief** in the sidebar to stop the local server. Browser
 security may replace the tab with a blank page instead of closing it.
@@ -100,9 +122,11 @@ mb serve
 
 ```text
 mb run           Generate and save a new briefing
+mb run --demo    Generate from bundled fictional inputs
 mb serve         Browse reports from the configured output directory
-mb serve --demo  Browse the repository's public sample report
+mb serve --demo  Browse sample or generated fictional demo runs
 mb doctor        Validate configuration without generating
+mb doctor --demo Validate the full fictional demo workflow
 mb init          Create private operational memory safely
 ```
 
@@ -155,11 +179,15 @@ search global session directories.
 ```text
 MorningBrief/
 ├── MorningBriefDataDemo/
+│   ├── prompt.md
+│   ├── seed/memory.md
+│   ├── vault/
 │   ├── history.csv
 │   └── reports/daily/demo.md
 ├── src/morningbrief/
 │   ├── cli.py
 │   ├── config.py
+│   ├── demo.py
 │   ├── doctor.py
 │   ├── history.py
 │   ├── output.py
@@ -170,6 +198,7 @@ MorningBrief/
 │   └── serve/
 ├── tests/
 ├── .env.example
+├── CHANGELOG.md
 ├── pyproject.toml
 └── README.md
 ```
