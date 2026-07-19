@@ -10,6 +10,12 @@ reports/
 history.csv
 MorningBriefData/
 
+# public, read-only demo data shipped with the repository
+!MorningBriefDataDemo/
+!MorningBriefDataDemo/history.csv
+!MorningBriefDataDemo/reports/
+!MorningBriefDataDemo/reports/**
+
 # local Codex/plugin state
 .codex/
 

@@ -1,9 +1,4 @@
-"""Maintain history.csv, the canonical index of generated Morning Briefs.
-
-Rows are keyed by date: a successful run replaces any existing row for that
-date (no duplicates); a failed run is recorded only when the date has no row
-yet, so a failed re-run never clobbers an earlier success.
-"""
+"""Append-only history index with atomic CSV replacement."""
 
 import csv
 import os
@@ -11,7 +6,9 @@ import tempfile
 from pathlib import Path
 from typing import Dict, List
 
+
 COLUMNS = [
+    "run_id",
     "date",
     "report_path",
     "rollout_path",
@@ -28,43 +25,44 @@ def load_rows(history_csv: Path) -> List[Dict[str, str]]:
     if not history_csv.exists():
         return []
     with history_csv.open(newline="") as stream:
-        return [dict(row) for row in csv.DictReader(stream)]
+        return [
+            {column: row.get(column, "") or "" for column in COLUMNS}
+            for row in csv.DictReader(stream)
+        ]
 
 
 def _write_rows(history_csv: Path, rows: List[Dict[str, str]]) -> None:
-    """Atomically replace history.csv via a temp file in the same directory,
-    so an interrupted write can never truncate the canonical index."""
+    """Atomically replace history.csv without truncating a valid index."""
     history_csv.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp_name = tempfile.mkstemp(
+    fd, temporary_name = tempfile.mkstemp(
         dir=history_csv.parent, prefix=f".{history_csv.name}.", suffix=".tmp"
     )
-    tmp_path = Path(tmp_name)
+    temporary_path = Path(temporary_name)
     try:
         with os.fdopen(fd, "w", newline="") as stream:
-            writer = csv.DictWriter(
-                stream, fieldnames=COLUMNS, extrasaction="ignore"
-            )
+            writer = csv.DictWriter(stream, fieldnames=COLUMNS, extrasaction="ignore")
             writer.writeheader()
             for row in rows:
-                writer.writerow({col: row.get(col, "") for col in COLUMNS})
-        os.replace(tmp_path, history_csv)
+                writer.writerow({column: row.get(column, "") for column in COLUMNS})
+        os.replace(temporary_path, history_csv)
     except BaseException:
-        tmp_path.unlink(missing_ok=True)
+        temporary_path.unlink(missing_ok=True)
         raise
 
 
-def upsert_row(history_csv: Path, row: Dict[str, str]) -> None:
-    """Insert the row, replacing any existing row with the same date."""
-    rows = [r for r in load_rows(history_csv) if r.get("date") != row["date"]]
-    rows.append(row)
-    rows.sort(key=lambda r: r.get("date", ""))
+def append_row(history_csv: Path, row: Dict[str, str]) -> None:
+    """Append one immutable run record and reject duplicate run IDs."""
+    run_id = row.get("run_id", "")
+    if not run_id:
+        raise ValueError("history row requires run_id")
+    rows = load_rows(history_csv)
+    if any(existing.get("run_id") == run_id for existing in rows):
+        raise ValueError(f"history already contains run_id {run_id}")
+    rows.append({column: row.get(column, "") for column in COLUMNS})
+    rows.sort(key=lambda item: (item.get("created_at", ""), item.get("run_id", "")))
     _write_rows(history_csv, rows)
 
 
 def record_failure(history_csv: Path, row: Dict[str, str]) -> bool:
-    """Record a failed run only if the date has no row yet. Returns True if
-    the row was written."""
-    if any(r.get("date") == row["date"] for r in load_rows(history_csv)):
-        return False
-    upsert_row(history_csv, row)
+    append_row(history_csv, row)
     return True
