@@ -1,40 +1,47 @@
 # MorningBrief
 
-MorningBrief transforms Codex into your personal Chief of Staff. By combining
-your knowledge, priorities, and operating principles, it generates consistent,
-decision-ready morning briefings tailored to how you think and work.
+MorningBrief is a local CLI and read-only report browser for repeatable
+Codex-based briefing workflows. It runs a configured prompt, saves the exact
+final response as Markdown, and records an append-only history of every run.
 
-MorningBrief is a local CLI for running a Codex-based Morning Brief workflow and reading saved reports in a Streamlit interface.
+Private prompts, notes, operational memory, Codex sessions, and generated
+reports stay outside this repository.
 
-It wraps an existing prompt workflow: `mb run` executes the configured prompt with Codex, extracts the generated brief, saves it as Markdown, and updates a CSV index. `mb serve` opens a read-only browser for previous reports.
+## What's New in v2.0
+
+- Zero-configuration public demo with `mb serve --demo`
+- Exact final-message capture through `codex exec --output-last-message`
+- Atomic report and history writes with non-destructive same-day reruns
+- Portable typed configuration and private state initialization
+- `mb doctor` diagnostics and operational-memory rollback on failed runs
 
 ## Features
 
-- Run a configured Codex prompt workflow from the command line
-- Save each generated brief as Markdown
-- Maintain a `history.csv` index of generated reports
-- Browse saved reports in a local Streamlit reader
-- Keep local paths and private data outside the repository
-- Configure paths with `.env` or environment variables
+- Generate a briefing with `mb run`
+- Browse saved successful and failed runs with `mb serve`
+- Preserve each run with a unique ID instead of replacing same-day reports
+- Validate configuration without generating through `mb doctor`
+- Initialize private operational state without overwriting through `mb init`
 
 ## Requirements
 
-- Python 3.9+
-- Codex CLI installed and available on `PATH`
-- A local Codex workspace containing your Morning Brief prompt
-- Local input directories that the prompt is allowed to read
+The public demo requires Python 3.9 or newer. Generating your own reports also
+requires the Codex CLI on `PATH`, a prompt, and an input directory that Codex
+may access.
 
 ## Installation
 
 ```bash
-git clone https://github.com/<your-account>/MorningBrief.git
+git clone https://github.com/WillGaoLab/MorningBrief.git
 cd MorningBrief
 python -m venv .venv
 source .venv/bin/activate
 pip install -e .
 ```
 
-Conda works as well:
+On Windows, activate the environment with `.venv\Scripts\activate`.
+
+Conda is also supported:
 
 ```bash
 conda create -n morningbrief python=3.12 -y
@@ -42,84 +49,146 @@ conda activate morningbrief
 pip install -e .
 ```
 
-## Configuration
+## Try the Demo
 
-Copy the example configuration and edit it for your machine:
+The repository includes fictional sample data. No Codex installation, private
+files, or configuration is needed:
+
+```bash
+mb serve --demo
+```
+
+Use **Close MorningBrief** in the sidebar to stop the local server. Browser
+security may replace the tab with a blank page instead of closing it.
+
+## Configure Your Workflow
+
+Create private operational memory:
+
+```bash
+mb init --state-dir /path/to/your/morningbrief-state
+```
+
+Copy the example configuration and replace its placeholder paths:
 
 ```bash
 cp .env.example .env
 ```
 
-Example `.env` values:
-
-```bash
+```dotenv
 MB_CODEX_REPO=/path/to/your/codex-workspace
 MB_PROMPT_FILE=/path/to/your/prompt.md
 MB_VAULT_DIR=/path/to/your/input-notes
-MB_AUTOMATION_MEMORY_DIR=/path/to/your/automation-memory
-MB_SESSIONS_ROOT=~/.codex/sessions
+MB_STATE_DIR=/path/to/your/morningbrief-state
 MB_DATA_ROOT=/path/to/your/output-data
 MB_CODEX_BINARY=codex
 ```
 
-The `.env` file is ignored by Git. You can also set the same `MB_*` values as environment variables, or set `MORNINGBRIEF_CONFIG` to load a config file from a different location.
-
-## Usage
-
-Generate today's Morning Brief:
+Validate the setup, generate a report, and open the reader:
 
 ```bash
+mb doctor
 mb run
-```
-
-Launch the local reader:
-
-```bash
 mb serve
 ```
 
-The reader opens a Streamlit app for the configured output directory. It displays saved reports, scan statistics, metadata, and file locations. It does not launch the workflow or write report data.
+`mb init` never replaces an existing `memory.md`.
+`MB_AUTOMATION_MEMORY_DIR` remains supported as the legacy name for
+`MB_STATE_DIR`.
+
+## Commands
+
+```text
+mb run           Generate and save a new briefing
+mb serve         Browse reports from the configured output directory
+mb serve --demo  Browse the repository's public sample report
+mb doctor        Validate configuration without generating
+mb init          Create private operational memory safely
+```
+
+Use an explicit configuration from any working directory:
+
+```bash
+mb --config /path/to/config.env doctor
+mb --config /path/to/config.env run
+```
+
+Environment variables override file values. MorningBrief discovers
+configuration in this order:
+
+1. `--config /path/to/config.env`
+2. `MORNINGBRIEF_CONFIG`
+3. `.env` beside an editable source installation
+4. the platform user-config location
+5. `.env` in the current working directory
+
+Platform user-config locations are:
+
+- macOS: `~/Library/Application Support/MorningBrief/config.env`
+- Linux: `${XDG_CONFIG_HOME:-~/.config}/morningbrief/config.env`
+- Windows: `%APPDATA%\MorningBrief\config.env`
+
+## Data and Reliability
+
+MorningBrief writes only below `MB_DATA_ROOT`:
+
+```text
+MorningBriefData/
+├── history.csv
+└── reports/
+    └── daily/
+        ├── 20260719T080000-0400_a1b2c3d4.md
+        └── 20260719T153000-0400_e5f6a7b8.md
+```
+
+Each run receives a unique ID. Reports and `history.csv` are written
+atomically, and same-day reruns append instead of replacing earlier results.
+Legacy `YYYY-MM-DD.md` reports and history rows remain readable.
+
+Before running Codex, MorningBrief validates the configuration and snapshots
+operational memory. If generation or extraction fails, it restores the
+pre-run memory. Codex continues to own its session logs; MorningBrief does not
+search global session directories.
 
 ## Project Structure
 
 ```text
 MorningBrief/
-├── src/
-│   └── morningbrief/
-│       ├── cli.py
-│       ├── config.py
-│       ├── workflow.py
-│       ├── rollout.py
-│       ├── history.py
-│       └── serve/
+├── MorningBriefDataDemo/
+│   ├── history.csv
+│   └── reports/daily/demo.md
+├── src/morningbrief/
+│   ├── cli.py
+│   ├── config.py
+│   ├── doctor.py
+│   ├── history.py
+│   ├── output.py
+│   ├── reports.py
+│   ├── runner.py
+│   ├── state.py
+│   ├── workflow.py
+│   └── serve/
+├── tests/
 ├── .env.example
 ├── pyproject.toml
 └── README.md
 ```
 
-## Output
+## Tests
 
-MorningBrief writes generated files below `MB_DATA_ROOT`.
+The test suite does not invoke Codex or read private data:
 
-Typical output:
-
-- `reports/daily/YYYY-MM-DD.md`
-- `history.csv`
-
-The output directory should not be committed.
+```bash
+python -m unittest discover -s tests -v
+```
 
 ## Privacy
 
-This repository is intended to contain only reusable application code and public documentation. Keep these local resources outside version control:
+Do not commit `.env`, operational `memory.md`, generated reports, Codex
+sessions, private prompts, or input documents. The included
+`MorningBriefDataDemo` contains fictional public sample content only.
 
-- `.env`
-- generated reports
-- `history.csv`
-- Codex sessions
-- local notes or source material
-- private workflow documentation
-
-Read the full **[DISCLAIMER.md](DISCLAIMER.md)** before using or publishing
+Read [DISCLAIMER.md](DISCLAIMER.md) before publishing or redistributing
 generated reports.
 
 ## Attribution
@@ -130,30 +199,14 @@ A **WillGaoLab** project, created and maintained by **William (Peidong) Gao**.
 - Brand: <https://github.com/WillGaoLab>
 - Personal GitHub: <https://github.com/PeidongGao>
 
-```text
-William (Peidong) Gao
-        |
-     WillGaoLab
-        |
- Open-source projects
-        |
- MorningBrief
-```
-
 ## Affiliation
 
-Not affiliated with, endorsed by, or sponsored by OpenAI, Codex, Streamlit,
-GitHub, any data provider, any model provider, or any other entity referenced
-here. All trademarks, product names, company names, and service names are the
-property of their respective owners and are used for identification only.
-
-Full text: [DISCLAIMER.md -> Affiliation Disclaimer](DISCLAIMER.md#affiliation-disclaimer).
+MorningBrief is not affiliated with, endorsed by, or sponsored by OpenAI,
+Codex, Streamlit, GitHub, or other referenced providers. See the
+[affiliation disclaimer](DISCLAIMER.md#affiliation-disclaimer).
 
 ## License
 
-Original code and documentation: **[MIT License](LICENSE)** © 2026 William Gao.
-
-The MIT grant covers this project's own source and documentation only. It does
-not extend to third-party content, private documents, API outputs, model
-outputs, datasets, trademarks, logos, product names, or other materials
-referenced by a configured workflow or generated report.
+Original code and documentation are licensed under the [MIT License](LICENSE)
+© 2026 William Gao. Generated reports, private documents, third-party content,
+API outputs, and model outputs are not covered by the repository license.

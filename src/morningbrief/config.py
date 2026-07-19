@@ -1,41 +1,69 @@
-"""Configuration for MorningBrief.
-
-All machine-specific paths live in a `.env` file at the project root — copy
-`.env.example` to `.env` and fill in your paths. The file is git-ignored so
-personal paths never enter version control.
-
-Lookup order for each MB_* key: OS environment variable, then the `.env`
-file, then the built-in default (required keys have no default). Values
-support a leading `~`. Set MORNINGBRIEF_CONFIG to use a config file at a
-different location.
-
-Settings are loaded lazily on first attribute access (config.CODEX_REPO,
-config.HISTORY_CSV, ...), so importing this module — e.g. for `mb --help` —
-never requires a config file.
-"""
+"""Typed, portable configuration for MorningBrief."""
 
 import os
+import sys
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Dict, List, Optional
 
 
 class ConfigError(RuntimeError):
-    """Raised when the config file is missing or incomplete."""
+    """Raised when configuration is missing or invalid."""
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_CONFIG_FILE = PROJECT_ROOT / ".env"
-EXAMPLE_CONFIG_FILE = PROJECT_ROOT / ".env.example"
 
 
-def config_file_path() -> Path:
-    override = os.environ.get("MORNINGBRIEF_CONFIG")
-    return Path(override).expanduser() if override else DEFAULT_CONFIG_FILE
+@dataclass(frozen=True)
+class Settings:
+    codex_workspace: Path
+    prompt_file: Path
+    input_dir: Path
+    state_dir: Path
+    data_root: Path
+    reports_dir: Path
+    history_csv: Path
+    codex_binary: str
+    config_file: Optional[Path] = None
 
 
-def _parse_env_file(path: Path) -> dict:
-    values = {}
-    for raw in path.read_text().splitlines():
-        line = raw.strip()
+@dataclass(frozen=True)
+class ReaderSettings:
+    data_root: Path
+    history_csv: Path
+    config_file: Optional[Path] = None
+
+
+def reader_settings(data_root: Path) -> ReaderSettings:
+    root = data_root.expanduser()
+    return ReaderSettings(data_root=root, history_csv=root / "history.csv")
+
+
+def user_config_file() -> Path:
+    if sys.platform == "darwin":
+        root = Path.home() / "Library" / "Application Support"
+        return root / "MorningBrief" / "config.env"
+    if os.name == "nt":
+        root = Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming"))
+        return root / "MorningBrief" / "config.env"
+    root = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+    return root / "morningbrief" / "config.env"
+
+
+def user_state_dir() -> Path:
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Application Support" / "MorningBrief" / "state"
+    if os.name == "nt":
+        root = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
+        return root / "MorningBrief" / "state"
+    root = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local" / "state"))
+    return root / "morningbrief"
+
+
+def _parse_env_file(path: Path) -> Dict[str, str]:
+    values: Dict[str, str] = {}
+    for raw_line in path.read_text().splitlines():
+        line = raw_line.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, _, value = line.partition("=")
@@ -46,53 +74,87 @@ def _parse_env_file(path: Path) -> dict:
     return values
 
 
-def _load() -> dict:
-    path = config_file_path()
-    if not path.is_file():
-        raise ConfigError(
-            f"config file not found: {path} — copy "
-            f"{EXAMPLE_CONFIG_FILE} to {DEFAULT_CONFIG_FILE} and fill in "
-            "your paths (or set MORNINGBRIEF_CONFIG to a config file)"
-        )
-    file_values = _parse_env_file(path)
+def config_candidates() -> List[Path]:
+    candidates = [PROJECT_ROOT / ".env", user_config_file(), Path.cwd() / ".env"]
+    unique: List[Path] = []
+    for candidate in candidates:
+        if candidate not in unique:
+            unique.append(candidate)
+    return unique
 
-    def raw(key, default=None):
+
+def config_file_path(explicit: Optional[Path] = None) -> Optional[Path]:
+    requested = explicit
+    if requested is None:
+        override = os.environ.get("MORNINGBRIEF_CONFIG")
+        requested = Path(override) if override else None
+    if requested is not None:
+        path = requested.expanduser()
+        if not path.is_file():
+            raise ConfigError(f"config file not found: {path}")
+        return path
+    return next((path for path in config_candidates() if path.is_file()), None)
+
+
+def _source_values(config_path: Optional[Path] = None) -> tuple:
+    source = config_file_path(config_path)
+    return source, _parse_env_file(source) if source else {}
+
+
+def load_settings(config_path: Optional[Path] = None) -> Settings:
+    source, file_values = _source_values(config_path)
+
+    def raw(key: str, default: Optional[str] = None) -> Optional[str]:
         value = os.environ.get(key)
         if value is None:
             value = file_values.get(key)
-        if value is None or value == "":
-            value = default
+        return default if value is None or value == "" else value
+
+    def required(key: str) -> str:
+        value = raw(key)
+        if value is None:
+            location = str(source) if source else "environment or configuration file"
+            raise ConfigError(f"required key {key} is not set in {location}")
         return value
 
-    def path_value(key, default=None):
+    def path_value(key: str, default: Optional[str] = None) -> Path:
         value = raw(key, default)
         if value is None:
-            raise ConfigError(f"required key {key} is not set in {path}")
+            raise ConfigError(f"required key {key} is not set")
         return Path(value).expanduser()
 
-    codex_repo = path_value("MB_CODEX_REPO")
+    workspace = Path(required("MB_CODEX_REPO")).expanduser()
+    state_value = raw("MB_STATE_DIR") or raw("MB_AUTOMATION_MEMORY_DIR")
+    if state_value is None:
+        raise ConfigError(
+            "required key MB_STATE_DIR is not set "
+            "(MB_AUTOMATION_MEMORY_DIR remains supported for compatibility)"
+        )
     data_root = path_value("MB_DATA_ROOT", "~/Documents/MorningBriefData")
-    return {
-        # existing automation (wrapped, never modified)
-        "CODEX_REPO": codex_repo,
-        "PROMPT_FILE": path_value(
+    return Settings(
+        codex_workspace=workspace,
+        prompt_file=path_value(
             "MB_PROMPT_FILE",
-            str(codex_repo / "prompts" / "reusable" / "morning-brief-prompt.md"),
+            str(workspace / "prompts" / "reusable" / "morning-brief-prompt.md"),
         ),
-        "VAULT_DIR": path_value("MB_VAULT_DIR"),
-        "AUTOMATION_MEMORY_DIR": path_value("MB_AUTOMATION_MEMORY_DIR"),
-        "SESSIONS_ROOT": path_value("MB_SESSIONS_ROOT", "~/.codex/sessions"),
-        # generated data (owned by MorningBrief; layout below the root is fixed)
-        "DATA_ROOT": data_root,
-        "REPORTS_DIR": data_root / "reports" / "daily",
-        "HISTORY_CSV": data_root / "history.csv",
-        "CODEX_BINARY": raw("MB_CODEX_BINARY", "codex"),
-    }
+        input_dir=Path(required("MB_VAULT_DIR")).expanduser(),
+        state_dir=Path(state_value).expanduser(),
+        data_root=data_root,
+        reports_dir=data_root / "reports" / "daily",
+        history_csv=data_root / "history.csv",
+        codex_binary=raw("MB_CODEX_BINARY", "codex") or "codex",
+        config_file=source,
+    )
 
 
-def __getattr__(name):
-    settings = _load()
-    if name in settings:
-        globals().update(settings)  # cache: later access skips re-reading .env
-        return settings[name]
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+def resolve_state_dir(
+    requested: Optional[Path] = None, config_path: Optional[Path] = None
+) -> Path:
+    if requested is not None:
+        return requested.expanduser()
+    _, file_values = _source_values(config_path)
+    for key in ("MB_STATE_DIR", "MB_AUTOMATION_MEMORY_DIR"):
+        value = os.environ.get(key) or file_values.get(key)
+        if value:
+            return Path(value).expanduser()
+    return user_state_dir()

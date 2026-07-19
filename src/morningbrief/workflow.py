@@ -1,32 +1,39 @@
-"""Invoke the configured Morning Brief workflow via `codex exec`.
-
-This module only launches the existing automation; it never modifies it.
-"""
+"""Invoke Codex and capture the exact final response for this run."""
 
 import subprocess
+from dataclasses import dataclass
+from pathlib import Path
+from typing import List
 
-from . import config
+from .config import Settings
 
 
-def run_codex() -> int:
-    """Run the Morning Brief generation. Returns the codex exit code.
+@dataclass(frozen=True)
+class CodexRun:
+    exit_code: int
+    command: List[str]
+    output_path: Path
 
-    Codex output is inherited by the terminal so the user sees live progress.
-    The prompt is piped via stdin (the trailing "-" argument), which is why no
-    cd into the repo is needed.
-    """
-    cmd = [
-        config.CODEX_BINARY,
+
+def build_command(settings: Settings, output_path: Path) -> List[str]:
+    return [
+        settings.codex_binary,
         "exec",
         "--skip-git-repo-check",
         "--add-dir",
-        str(config.VAULT_DIR),
+        str(settings.input_dir),
         "--add-dir",
-        str(config.AUTOMATION_MEMORY_DIR),
+        str(settings.state_dir),
+        "--output-last-message",
+        str(output_path),
         "-C",
-        str(config.CODEX_REPO),
+        str(settings.codex_workspace),
         "-",
     ]
-    with config.PROMPT_FILE.open("rb") as prompt:
-        result = subprocess.run(cmd, stdin=prompt)
-    return result.returncode
+
+
+def run_codex(settings: Settings, output_path: Path) -> CodexRun:
+    command = build_command(settings, output_path)
+    with settings.prompt_file.open("rb") as prompt:
+        result = subprocess.run(command, stdin=prompt)
+    return CodexRun(result.returncode, command, output_path)

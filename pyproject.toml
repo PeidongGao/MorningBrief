@@ -1,13 +1,22 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "morningbrief"
-version = "0.1.0"
+version = "2.0.0"
 description = "CLI wrapper around a local Codex Morning Brief workflow"
+authors = [
+    { name = "William Peidong Gao", email = "william@williampeidonggao.com" },
+]
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.9"
-dependencies = ["streamlit>=1.30"]
+dependencies = ["streamlit>=1.37"]
+
+[project.urls]
+Homepage = "https://williampeidonggao.com/resources/MorningBrief/"
 
 [project.scripts]
 mb = "morningbrief.cli:main"
