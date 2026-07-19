@@ -9,7 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from . import config, doctor, runner, state
+from . import config, demo, doctor, runner, state
 
 
 def _err(message: str) -> None:
@@ -114,8 +114,22 @@ def build_parser() -> argparse.ArgumentParser:
         help="Path to a MorningBrief environment-style configuration file",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
-    subparsers.add_parser("run", help="Generate and save a new Morning Brief")
-    subparsers.add_parser("doctor", help="Validate configuration without generating")
+    run_parser = subparsers.add_parser(
+        "run", help="Generate and save a new Morning Brief"
+    )
+    run_parser.add_argument(
+        "--demo",
+        action="store_true",
+        help="Generate from bundled fictional inputs without private configuration",
+    )
+    doctor_parser = subparsers.add_parser(
+        "doctor", help="Validate configuration without generating"
+    )
+    doctor_parser.add_argument(
+        "--demo",
+        action="store_true",
+        help="Validate the self-contained fictional demo workflow",
+    )
     init_parser = subparsers.add_parser(
         "init", help="Safely create operational memory without overwriting it"
     )
@@ -140,10 +154,16 @@ def main(argv=None) -> int:
         if args.command == "init":
             state_dir = config.resolve_state_dir(args.state_dir, args.config)
             return init_command(state_dir)
-        if args.command == "serve" and args.demo:
-            demo_root = config.PROJECT_ROOT / "MorningBriefDataDemo"
-            return serve_command(config.reader_settings(demo_root))
-        settings = _settings(args.config)
+        if getattr(args, "demo", False):
+            if args.command == "serve":
+                return serve_command(demo.demo_reader_settings())
+            settings = (
+                demo.doctor_settings()
+                if args.command == "doctor"
+                else demo.prepare_settings()
+            )
+        else:
+            settings = _settings(args.config)
         if args.command == "run":
             return run_command(settings)
         if args.command == "doctor":

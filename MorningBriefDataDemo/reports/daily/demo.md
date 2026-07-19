@@ -5,7 +5,7 @@
 ## Executive Summary
 
 - [NEW] Improved the knowledge organization workflow by connecting project tracking, memory, and daily review processes.
-- [NEW] Completed the first iteration of an AI Chief of Staff workflow using Codex automation and structured memory.
+- [NEW] Completed the first iteration of an automated briefing workflow using Codex and structured memory.
 - [RISK] Several active initiatives require prioritization to maintain focus on the highest-impact outcomes.
 
 ## New Knowledge
@@ -18,7 +18,7 @@ AI systems become more useful when they understand goals, decisions, and priorit
 
 ## Active Projects
 
-### AI Chief of Staff System
+### Automated Briefing System
 
 Status:
 Active development
@@ -60,5 +60,5 @@ Continue optimizing the information flow.
 ## Suggested Priorities Today
 
 1. Review the most important active projects.
-2. Improve the AI Chief of Staff workflow.
+2. Improve the automated briefing workflow.
 3. Create one meaningful knowledge artifact.
