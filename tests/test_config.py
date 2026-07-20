@@ -33,6 +33,7 @@ class ConfigTests(unittest.TestCase):
 
             self.assertIsInstance(settings, config.Settings)
             self.assertEqual(settings.state_dir, Path(directory) / "state")
+            self.assertEqual(settings.sessions_root, Path.home() / ".codex" / "sessions")
             self.assertEqual(settings.config_file, path)
 
     def test_environment_overrides_file(self):

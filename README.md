@@ -171,8 +171,9 @@ Legacy `YYYY-MM-DD.md` reports and history rows remain readable.
 
 Before running Codex, MorningBrief validates the configuration and snapshots
 operational memory. If generation or extraction fails, it restores the
-pre-run memory. Codex continues to own its session logs; MorningBrief does not
-search global session directories.
+pre-run memory. Codex continues to own its session logs. MorningBrief captures
+the report directly, then matches that exact final response in the fresh Codex
+rollouts only to record `rollout_path` and `session_dir` metadata.
 
 ## Project Structure
 

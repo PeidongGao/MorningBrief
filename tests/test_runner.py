@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
-from morningbrief import history, runner, state, workflow
+from morningbrief import history, runner, sessions, state, workflow
 from morningbrief.config import Settings
 
 
@@ -40,7 +40,11 @@ class RunnerTests(unittest.TestCase):
                 output_path.write_text("Brief\nScan: 10 files | 2 changed | 1 need attention")
                 return workflow.CodexRun(0, [], output_path)
 
-            with patch("morningbrief.runner.workflow.run_codex", side_effect=fake_run):
+            with patch(
+                "morningbrief.runner.workflow.run_codex", side_effect=fake_run
+            ), patch(
+                "morningbrief.runner.sessions.find_matching_rollout"
+            ) as find_rollout:
                 first = runner.run(settings, moment)
                 second = runner.run(settings, moment)
 
@@ -49,6 +53,43 @@ class RunnerTests(unittest.TestCase):
             self.assertNotEqual(first.run_id, second.run_id)
             self.assertTrue(first.report_path.is_file())
             self.assertTrue(second.report_path.is_file())
+            find_rollout.assert_not_called()
+            self.assertTrue(all(row["rollout_path"] == "" for row in rows))
+            self.assertTrue(all(row["session_dir"] == "" for row in rows))
+
+    def test_success_records_matching_rollout_and_session_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            settings = self.settings(Path(directory))
+            settings = Settings(
+                **{
+                    **settings.__dict__,
+                    "sessions_root": Path(directory) / "sessions",
+                }
+            )
+            rollout_path = settings.sessions_root / "rollout-test.jsonl"
+            metadata = sessions.SessionMetadata(
+                rollout_path=rollout_path,
+                session_dir=rollout_path.parent,
+            )
+
+            def fake_run(_settings, output_path):
+                output_path.write_text("Brief\nScan: 4 | 1 | 0")
+                return workflow.CodexRun(0, [], output_path)
+
+            with patch(
+                "morningbrief.runner.workflow.run_codex", side_effect=fake_run
+            ), patch(
+                "morningbrief.runner.sessions.find_matching_rollout",
+                return_value=metadata,
+            ):
+                runner.run(
+                    settings,
+                    datetime(2026, 7, 20, 8, 0, tzinfo=timezone.utc),
+                )
+
+            row = history.load_rows(settings.history_csv)[0]
+            self.assertEqual(row["rollout_path"], str(rollout_path))
+            self.assertEqual(row["session_dir"], str(rollout_path.parent))
 
     def test_failed_codex_run_restores_memory_and_records_failure(self):
         with tempfile.TemporaryDirectory() as directory:

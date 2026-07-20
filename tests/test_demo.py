@@ -44,6 +44,7 @@ class DemoTests(unittest.TestCase):
             settings = demo.doctor_settings(root)
 
             self.assertEqual(settings.state_dir, root.resolve() / "seed")
+            self.assertIsNone(settings.sessions_root)
             self.assertFalse((root / "runtime").exists())
 
     def test_prepare_settings_seeds_runtime_memory_without_overwriting(self):
@@ -57,6 +58,7 @@ class DemoTests(unittest.TestCase):
             settings = demo.prepare_settings(root)
             memory = settings.state_dir / "memory.md"
             self.assertEqual(memory.read_text(), "seed memory\n")
+            self.assertIsNone(settings.sessions_root)
 
             memory.write_text("updated by a run\n")
             demo.prepare_settings(root)

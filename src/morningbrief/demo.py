@@ -21,6 +21,7 @@ def _settings(root: Path, state_dir: Path) -> config.Settings:
         reports_dir=data_root / "reports" / "daily",
         history_csv=data_root / "history.csv",
         codex_binary="codex",
+        sessions_root=None,
     )
 
 
