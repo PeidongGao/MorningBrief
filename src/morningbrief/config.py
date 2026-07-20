@@ -24,6 +24,7 @@ class Settings:
     reports_dir: Path
     history_csv: Path
     codex_binary: str
+    sessions_root: Optional[Path] = None
     config_file: Optional[Path] = None
 
 
@@ -143,6 +144,7 @@ def load_settings(config_path: Optional[Path] = None) -> Settings:
         reports_dir=data_root / "reports" / "daily",
         history_csv=data_root / "history.csv",
         codex_binary=raw("MB_CODEX_BINARY", "codex") or "codex",
+        sessions_root=path_value("MB_SESSIONS_ROOT", "~/.codex/sessions").resolve(),
         config_file=source,
     )
 

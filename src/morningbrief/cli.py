@@ -39,6 +39,8 @@ def run_command(settings: config.Settings) -> int:
             f"mb: warning: Scan counts could not be parsed: {result.scan_line!r}",
             file=sys.stderr,
         )
+    for warning in result.warnings:
+        print(f"mb: warning: {warning}", file=sys.stderr)
 
     print()
     print("=== Final Morning Brief ===")
